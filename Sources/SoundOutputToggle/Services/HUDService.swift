@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 
 final class HUDService {
-    private var panel: NSPanel?
+    private var panels: [NSPanel] = []
+    private var activeToken = UUID()
 
     func show(
         title: String,
@@ -11,43 +12,51 @@ final class HUDService {
         duration: TimeInterval = 0.95,
         completion: @escaping () -> Void
     ) {
-        let panel = makePanel(
-            title: title,
-            subtitle: subtitle,
-            isError: isError
-        )
-        self.panel = panel
+        activeToken = UUID()
+        let token = activeToken
+        closePanels()
 
-        panel.alphaValue = 0.01
-        panel.orderFrontRegardless()
+        let screenFrames = NSScreen.screens.map(\.visibleFrame)
+        let frames = screenFrames.isEmpty
+            ? [NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)]
+            : screenFrames
+
+        let panels = frames.map { frame in
+            makePanel(
+                screenFrame: frame,
+                title: title,
+                subtitle: subtitle,
+                isError: isError
+            )
+        }
+        self.panels = panels
+
+        panels.forEach { panel in
+            panel.alphaValue = 0.01
+            panel.orderFrontRegardless()
+        }
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.06
-            panel.animator().alphaValue = 1
+            panels.forEach { panel in
+                panel.animator().alphaValue = 1
+            }
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self, weak panel] in
-            guard let panel else {
-                completion()
-                return
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self, panels] in
+            guard let self, self.activeToken == token else { return }
 
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.16
-                panel.animator().alphaValue = 0
-            } completionHandler: {
-                panel.close()
-                if self?.panel === panel {
-                    self?.panel = nil
-                }
+            self.fadeOut(
+                panels: panels,
+                token: token
+            ) {
                 completion()
             }
         }
     }
 
-    private func makePanel(title: String, subtitle: String, isError: Bool) -> NSPanel {
+    private func makePanel(screenFrame: NSRect, title: String, subtitle: String, isError: Bool) -> NSPanel {
         let size = NSSize(width: 360, height: 184)
-        let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let origin = NSPoint(
             x: screenFrame.midX - size.width / 2,
             y: screenFrame.midY - size.height / 2 + 24
@@ -73,6 +82,42 @@ final class HUDService {
             )
         )
         return panel
+    }
+
+    private func fadeOut(
+        panels: [NSPanel],
+        token: UUID,
+        _ completion: @escaping () -> Void
+    ) {
+        guard !panels.isEmpty else {
+            completion()
+            return
+        }
+
+        let fadeGroup = DispatchGroup()
+
+        for panel in panels {
+            fadeGroup.enter()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.16
+                panel.animator().alphaValue = 0
+            } completionHandler: {
+                panel.close()
+                fadeGroup.leave()
+            }
+        }
+
+        fadeGroup.notify(queue: .main) { [weak self] in
+            if self?.activeToken == token {
+                self?.panels.removeAll()
+                completion()
+            }
+        }
+    }
+
+    private func closePanels() {
+        panels.forEach { $0.close() }
+        panels.removeAll()
     }
 }
 
