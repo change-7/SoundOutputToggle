@@ -18,11 +18,11 @@ final class HUDService {
         )
         self.panel = panel
 
-        panel.alphaValue = 0
+        panel.alphaValue = 0.01
         panel.orderFrontRegardless()
 
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.12
+            context.duration = 0.06
             panel.animator().alphaValue = 1
         }
 

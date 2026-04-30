@@ -27,7 +27,6 @@ final class AppServices {
         audioService.refresh()
         let slot = toggleController.toggle() ?? toggleController.currentSlot()
         let deviceName = toggleController.currentDeviceName()
-        iconService.updateToggleAppIcon(slot: slot, deviceName: deviceName)
 
         if selectionStore.showHUD {
             let isError = toggleController.lastError != nil
@@ -39,8 +38,14 @@ final class AppServices {
             ) {
                 NSApp.terminate(nil)
             }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                self.iconService.updateToggleAppIcon(slot: slot, deviceName: deviceName)
+            }
             return
         }
+
+        iconService.updateToggleAppIcon(slot: slot, deviceName: deviceName)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NSApp.terminate(nil)
