@@ -27,7 +27,7 @@ BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
 rm -rf "$TOGGLE_BUNDLE" "$SETTINGS_BUNDLE" "$ICONS_DIR"
 mkdir -p "$ICONS_DIR"
 
-swift "$ROOT_DIR/script/generate_icon.swift" "$ICONS_DIR/SoundOutputToggle.icns" "unknown"
+swift "$ROOT_DIR/script/generate_icon.swift" "$ICONS_DIR/SoundOutputToggle.icns" "toggle"
 swift "$ROOT_DIR/script/generate_icon.swift" "$ICONS_DIR/SoundOutputToggleSettings.icns" "settings"
 
 create_bundle() {
@@ -105,18 +105,12 @@ open_settings() {
   /usr/bin/open -n "$SETTINGS_BUNDLE"
 }
 
-refresh_icon() {
-  /usr/bin/open -n "$TOGGLE_BUNDLE" --args --refresh-icon
-}
-
 install_user() {
   local install_dir="$HOME/Applications"
   mkdir -p "$install_dir"
   rm -rf "$install_dir/$APP_NAME.app" "$install_dir/$SETTINGS_APP_NAME.app"
   cp -R "$TOGGLE_BUNDLE" "$install_dir/"
   cp -R "$SETTINGS_BUNDLE" "$install_dir/"
-  /usr/bin/open -n "$install_dir/$APP_NAME.app" --args --refresh-icon
-  sleep 1
   /usr/bin/mdimport "$install_dir/$APP_NAME.app" "$install_dir/$SETTINGS_APP_NAME.app" >/dev/null 2>&1 || true
   echo "Installed to $install_dir"
 }
@@ -126,8 +120,6 @@ install_system() {
   rm -rf "$install_dir/$APP_NAME.app" "$install_dir/$SETTINGS_APP_NAME.app"
   /usr/bin/ditto "$TOGGLE_BUNDLE" "$install_dir/$APP_NAME.app"
   /usr/bin/ditto "$SETTINGS_BUNDLE" "$install_dir/$SETTINGS_APP_NAME.app"
-  /usr/bin/open -n "$install_dir/$APP_NAME.app" --args --refresh-icon
-  sleep 1
   /usr/bin/mdimport "$install_dir/$APP_NAME.app" "$install_dir/$SETTINGS_APP_NAME.app" >/dev/null 2>&1 || true
   echo "Installed to $install_dir"
 }
@@ -158,9 +150,6 @@ case "$MODE" in
   settings|--settings)
     open_settings
     ;;
-  refresh-icon|--refresh-icon)
-    refresh_icon
-    ;;
   install)
     install_user
     ;;
@@ -188,7 +177,7 @@ case "$MODE" in
     test -f "$SETTINGS_BUNDLE/Contents/Resources/SoundOutputToggleSettings.icns"
     ;;
   *)
-    echo "usage: $0 [run|toggle|settings|refresh-icon|install|install-system|dmg|--debug|--logs|--telemetry|--verify]" >&2
+    echo "usage: $0 [run|toggle|settings|install|install-system|dmg|--debug|--logs|--telemetry|--verify]" >&2
     exit 2
     ;;
 esac

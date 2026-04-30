@@ -4,7 +4,6 @@ struct SettingsView: View {
     @ObservedObject var audioService: AudioDeviceService
     @ObservedObject var selectionStore: DeviceSelectionStore
     @ObservedObject var toggleController: OutputToggleController
-    let iconService: IconService
     let hudService: HUDService
 
     var body: some View {
@@ -61,29 +60,17 @@ struct SettingsView: View {
             HStack {
                 Button("Set A to Current") {
                     selectionStore.primaryUID = audioService.defaultOutputUID
-                    iconService.updateToggleAppIcon(
-                        slot: toggleController.currentSlot(),
-                        deviceName: toggleController.currentDeviceName()
-                    )
                 }
 
                 Button("Set B to Current") {
                     selectionStore.secondaryUID = audioService.defaultOutputUID
-                    iconService.updateToggleAppIcon(
-                        slot: toggleController.currentSlot(),
-                        deviceName: toggleController.currentDeviceName()
-                    )
                 }
 
                 Spacer()
 
                 Button("Toggle Now") {
-                    let slot = toggleController.toggle() ?? toggleController.currentSlot()
+                    toggleController.toggle()
                     let deviceName = toggleController.currentDeviceName()
-                    iconService.updateToggleAppIcon(
-                        slot: slot,
-                        deviceName: deviceName
-                    )
 
                     if selectionStore.showHUD {
                         let isError = toggleController.lastError != nil
@@ -115,22 +102,6 @@ struct SettingsView: View {
         .padding(24)
         .onAppear {
             audioService.refresh()
-            iconService.updateToggleAppIcon(
-                slot: toggleController.currentSlot(),
-                deviceName: toggleController.currentDeviceName()
-            )
-        }
-        .onChange(of: selectionStore.primaryUID) { _ in
-            iconService.updateToggleAppIcon(
-                slot: toggleController.currentSlot(),
-                deviceName: toggleController.currentDeviceName()
-            )
-        }
-        .onChange(of: selectionStore.secondaryUID) { _ in
-            iconService.updateToggleAppIcon(
-                slot: toggleController.currentSlot(),
-                deviceName: toggleController.currentDeviceName()
-            )
         }
     }
 

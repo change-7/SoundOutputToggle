@@ -7,7 +7,6 @@ final class AppServices {
     let audioService: AudioDeviceService
     let selectionStore: DeviceSelectionStore
     let toggleController: OutputToggleController
-    let iconService: IconService
     let hudService: HUDService
 
     private var settingsWindow: NSWindow?
@@ -19,13 +18,12 @@ final class AppServices {
             audioService: audioService,
             store: selectionStore
         )
-        iconService = IconService()
         hudService = HUDService()
     }
 
     func toggleAndTerminate() {
         audioService.refresh()
-        let slot = toggleController.toggle() ?? toggleController.currentSlot()
+        toggleController.toggle()
         let deviceName = toggleController.currentDeviceName()
 
         if selectionStore.showHUD {
@@ -38,26 +36,8 @@ final class AppServices {
             ) {
                 NSApp.terminate(nil)
             }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                self.iconService.updateToggleAppIcon(slot: slot, deviceName: deviceName)
-            }
             return
         }
-
-        iconService.updateToggleAppIcon(slot: slot, deviceName: deviceName)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            NSApp.terminate(nil)
-        }
-    }
-
-    func refreshIconAndTerminate() {
-        audioService.refresh()
-        iconService.updateToggleAppIcon(
-            slot: toggleController.currentSlot(),
-            deviceName: toggleController.currentDeviceName()
-        )
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NSApp.terminate(nil)
@@ -80,7 +60,6 @@ final class AppServices {
             audioService: audioService,
             selectionStore: selectionStore,
             toggleController: toggleController,
-            iconService: iconService,
             hudService: hudService
         )
         .frame(width: 560, height: 460)

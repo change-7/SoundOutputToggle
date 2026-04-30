@@ -6,12 +6,18 @@ import Foundation
 let arguments = CommandLine.arguments
 
 guard arguments.count == 3 else {
-    FileHandle.standardError.write(Data("usage: generate_icon.swift <output.icns> <A|B|settings|unknown>\n".utf8))
+    FileHandle.standardError.write(Data("usage: generate_icon.swift <output.icns> <toggle|settings>\n".utf8))
     exit(2)
 }
 
 let outputURL = URL(fileURLWithPath: arguments[1])
 let variant = arguments[2]
+
+guard variant == "toggle" || variant == "settings" else {
+    FileHandle.standardError.write(Data("variant must be toggle or settings\n".utf8))
+    exit(2)
+}
+
 let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
     .appendingPathComponent("SoundOutputToggle-\(UUID().uuidString).iconset")
 
@@ -62,34 +68,13 @@ private func makeIcon(variant: String, pixels: Int) -> NSImage {
     let size = NSSize(width: pixels, height: pixels)
     let image = NSImage(size: size)
     let scale = CGFloat(pixels) / 1024
+    let isSettings = variant == "settings"
+    let backgroundColor: NSColor = isSettings ? .systemIndigo : .systemBlue
 
     image.lockFocus()
 
     NSColor.clear.setFill()
     NSRect(origin: .zero, size: size).fill()
-
-    let backgroundColor: NSColor
-    let label: String
-    let showsSettingsBadge: Bool
-
-    switch variant {
-    case "A":
-        backgroundColor = .systemBlue
-        label = "A"
-        showsSettingsBadge = false
-    case "B":
-        backgroundColor = .systemGreen
-        label = "B"
-        showsSettingsBadge = false
-    case "settings":
-        backgroundColor = .systemGray
-        label = ""
-        showsSettingsBadge = true
-    default:
-        backgroundColor = .systemGray
-        label = "?"
-        showsSettingsBadge = false
-    }
 
     let backgroundRect = NSRect(x: 76 * scale, y: 76 * scale, width: 872 * scale, height: 872 * scale)
     let backgroundPath = NSBezierPath(
@@ -113,76 +98,12 @@ private func makeIcon(variant: String, pixels: Int) -> NSImage {
         )
     }
 
-    if !label.isEmpty {
-        let badgeRect = NSRect(x: 74 * scale, y: 92 * scale, width: 876 * scale, height: 282 * scale)
-        let badgePath = NSBezierPath(
-            roundedRect: badgeRect,
-            xRadius: 141 * scale,
-            yRadius: 141 * scale
-        )
-        NSColor.white.setFill()
-        badgePath.fill()
-
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-        let horizontalPadding = 30 * scale
-        let maxTextWidth = badgeRect.width - horizontalPadding * 2
-        let maxTextHeight = badgeRect.height - 42 * scale
-        let fontSize = fittedFontSize(
-            label: label,
-            maxWidth: maxTextWidth,
-            maxHeight: maxTextHeight,
-            minSize: 112 * scale,
-            maxSize: 298 * scale
-        )
-        let font = NSFont.systemFont(ofSize: fontSize, weight: .heavy)
-        let measuredSize = (label as NSString).size(withAttributes: [.font: font])
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: backgroundColor,
-            .paragraphStyle: paragraph
-        ]
-
-        (label as NSString).draw(
-            in: NSRect(
-                x: badgeRect.minX + horizontalPadding,
-                y: badgeRect.midY - measuredSize.height / 2 - 12 * scale,
-                width: maxTextWidth,
-                height: measuredSize.height + 24 * scale
-            ),
-            withAttributes: attributes
-        )
-    }
-
-    if showsSettingsBadge {
+    if isSettings {
         drawSettingsBadge(backgroundColor: backgroundColor, scale: scale)
     }
 
     image.unlockFocus()
     return image
-}
-
-private func fittedFontSize(
-    label: String,
-    maxWidth: CGFloat,
-    maxHeight: CGFloat,
-    minSize: CGFloat,
-    maxSize: CGFloat
-) -> CGFloat {
-    var size = maxSize
-
-    while size > minSize {
-        let font = NSFont.systemFont(ofSize: size, weight: .heavy)
-        let measured = (label as NSString).size(withAttributes: [.font: font])
-
-        if measured.width <= maxWidth && measured.height <= maxHeight {
-            return size
-        }
-
-        size -= 4
-    }
-
-    return minSize
 }
 
 private func drawSettingsBadge(backgroundColor: NSColor, scale: CGFloat) {

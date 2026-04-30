@@ -12,14 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             services.toggleAndTerminate()
         case .settings:
             NSApp.setActivationPolicy(.regular)
-            services.iconService.updateToggleAppIcon(
-                slot: services.toggleController.currentSlot(),
-                deviceName: services.toggleController.currentDeviceName()
-            )
             services.openSettings()
-        case .refreshIcon:
-            NSApp.setActivationPolicy(.accessory)
-            services.refreshIconAndTerminate()
         }
     }
 
