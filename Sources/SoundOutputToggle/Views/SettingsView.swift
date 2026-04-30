@@ -5,9 +5,10 @@ struct SettingsView: View {
     @ObservedObject var selectionStore: DeviceSelectionStore
     @ObservedObject var toggleController: OutputToggleController
     let iconService: IconService
+    let hudService: HUDService
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Sound Output Toggle")
@@ -54,6 +55,7 @@ struct SettingsView: View {
                 }
 
                 Toggle("Also switch system alert sounds", isOn: $selectionStore.includeSystemSounds)
+                Toggle("Show switching HUD", isOn: $selectionStore.showHUD)
             }
 
             HStack {
@@ -77,10 +79,20 @@ struct SettingsView: View {
 
                 Button("Toggle Now") {
                     let slot = toggleController.toggle() ?? toggleController.currentSlot()
+                    let deviceName = toggleController.currentDeviceName()
                     iconService.updateToggleAppIcon(
                         slot: slot,
-                        deviceName: toggleController.currentDeviceName()
+                        deviceName: deviceName
                     )
+
+                    if selectionStore.showHUD {
+                        let isError = toggleController.lastError != nil
+                        hudService.show(
+                            title: isError ? "Switch Failed" : deviceName,
+                            subtitle: isError ? (toggleController.lastError ?? "Could not switch output") : "Sound Output",
+                            isError: isError
+                        ) {}
+                    }
                 }
                 .keyboardShortcut("t", modifiers: [.command])
                 .disabled(!selectionStore.isConfigured)

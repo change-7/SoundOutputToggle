@@ -14,6 +14,10 @@ final class DeviceSelectionStore: ObservableObject {
         didSet { defaults.set(includeSystemSounds, forKey: Keys.includeSystemSounds) }
     }
 
+    @Published var showHUD: Bool {
+        didSet { defaults.set(showHUD, forKey: Keys.showHUD) }
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = UserDefaults(suiteName: "com.pdg.SoundOutputToggle.shared") ?? .standard) {
@@ -21,6 +25,7 @@ final class DeviceSelectionStore: ObservableObject {
         primaryUID = defaults.string(forKey: Keys.primaryUID)
         secondaryUID = defaults.string(forKey: Keys.secondaryUID)
         includeSystemSounds = defaults.object(forKey: Keys.includeSystemSounds) as? Bool ?? true
+        showHUD = defaults.object(forKey: Keys.showHUD) as? Bool ?? true
     }
 
     var isConfigured: Bool {
@@ -34,5 +39,6 @@ final class DeviceSelectionStore: ObservableObject {
         static let primaryUID = "primaryOutputDeviceUID"
         static let secondaryUID = "secondaryOutputDeviceUID"
         static let includeSystemSounds = "includeSystemSounds"
+        static let showHUD = "showHUD"
     }
 }

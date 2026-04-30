@@ -29,7 +29,8 @@ SoundOutputToggle Settings.app
 1. `/Applications/SoundOutputToggle Settings.app`을 실행합니다.
 2. `Output A`와 `Output B`에 전환할 사운드 출력 기기를 선택합니다.
 3. 필요하면 `Also switch system alert sounds`를 켭니다.
-4. 설정 앱을 닫습니다.
+4. 전환 후 화면에 짧은 확인 표시를 보고 싶다면 `Show switching HUD`를 켭니다.
+5. 설정 앱을 닫습니다.
 
 ## 권장 사용법
 
@@ -150,3 +151,5 @@ Shortcuts
 `SoundOutputToggle.app` 아이콘은 현재 출력 기기의 앞 글자와 색상으로 갱신됩니다.
 
 다만 Dock에 고정된 아이콘은 macOS Dock 캐시 때문에 즉시 바뀌지 않을 수 있습니다. 상태 확인용으로는 Finder, Spotlight, Alfred, Raycast 쪽 표시가 더 적합합니다.
+
+`Show switching HUD`를 켜면 출력 전환 직후 macOS 기본 볼륨 HUD와 비슷한 어두운 반투명 오버레이가 짧게 표시됩니다. Dock이나 Alfred 아이콘 캐시와 관계없이 현재 전환된 출력 기기를 바로 확인할 수 있어 권장합니다.

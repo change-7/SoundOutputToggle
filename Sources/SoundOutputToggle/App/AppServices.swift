@@ -8,6 +8,7 @@ final class AppServices {
     let selectionStore: DeviceSelectionStore
     let toggleController: OutputToggleController
     let iconService: IconService
+    let hudService: HUDService
 
     private var settingsWindow: NSWindow?
 
@@ -19,13 +20,27 @@ final class AppServices {
             store: selectionStore
         )
         iconService = IconService()
-
+        hudService = HUDService()
     }
 
     func toggleAndTerminate() {
         audioService.refresh()
         let slot = toggleController.toggle() ?? toggleController.currentSlot()
-        iconService.updateToggleAppIcon(slot: slot, deviceName: toggleController.currentDeviceName())
+        let deviceName = toggleController.currentDeviceName()
+        iconService.updateToggleAppIcon(slot: slot, deviceName: deviceName)
+
+        if selectionStore.showHUD {
+            let isError = toggleController.lastError != nil
+            hudService.show(
+                title: isError ? "Switch Failed" : deviceName,
+                subtitle: isError ? (toggleController.lastError ?? "Could not switch output") : "Sound Output",
+                isError: isError,
+                duration: isError ? 1.35 : 0.95
+            ) {
+                NSApp.terminate(nil)
+            }
+            return
+        }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NSApp.terminate(nil)
@@ -60,12 +75,13 @@ final class AppServices {
             audioService: audioService,
             selectionStore: selectionStore,
             toggleController: toggleController,
-            iconService: iconService
+            iconService: iconService,
+            hudService: hudService
         )
-        .frame(width: 560, height: 430)
+        .frame(width: 560, height: 460)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 430),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 460),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
