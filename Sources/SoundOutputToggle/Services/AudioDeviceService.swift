@@ -17,7 +17,7 @@ final class AudioDeviceService: ObservableObject {
         defaultOutputUID = try? defaultOutputDevice()?.uid
     }
 
-    func defaultOutputDevice() throws -> AudioOutputDevice? {
+    private func defaultOutputDevice() throws -> AudioOutputDevice? {
         let deviceID = try getDefaultOutputDeviceID()
         return try makeOutputDevice(from: deviceID)
     }

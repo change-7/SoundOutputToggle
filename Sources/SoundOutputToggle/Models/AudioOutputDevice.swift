@@ -1,7 +1,6 @@
 import CoreAudio
-import Foundation
 
-struct AudioOutputDevice: Identifiable, Equatable {
+struct AudioOutputDevice: Identifiable {
     let id: String
     let audioDeviceID: AudioDeviceID
     let uid: String

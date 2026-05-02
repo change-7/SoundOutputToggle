@@ -6,5 +6,8 @@ struct SoundOutputToggleApp: App {
 
     var body: some Scene {
         Settings { EmptyView() }
+            .commands {
+                CommandGroup(replacing: .appSettings) {}
+            }
     }
 }

@@ -1,6 +1,5 @@
 import AppKit
 import Combine
-import Foundation
 
 final class OutputToggleController: ObservableObject {
     @Published private(set) var lastMessage: String?
@@ -14,27 +13,24 @@ final class OutputToggleController: ObservableObject {
         self.store = store
     }
 
-    @discardableResult
-    func toggle() -> OutputSlot? {
-        guard let target = nextTarget() else {
+    func toggle() {
+        guard let targetUID = nextTargetUID() else {
             lastError = AudioDeviceError.devicesNotConfigured.localizedDescription
             NSSound.beep()
-            return nil
+            return
         }
 
         do {
             try audioService.setDefaultOutputDevice(
-                uid: target.uid,
+                uid: targetUID,
                 includeSystemSounds: store.includeSystemSounds
             )
-            let name = audioService.device(uid: target.uid)?.name ?? "selected device"
+            let name = audioService.device(uid: targetUID)?.name ?? "selected device"
             lastError = nil
             lastMessage = "Switched to \(name)."
-            return target.slot
         } catch {
             lastError = error.localizedDescription
             NSSound.beep()
-            return nil
         }
     }
 
@@ -59,7 +55,7 @@ final class OutputToggleController: ObservableObject {
         return audioService.device(uid: currentUID)?.name ?? "Unknown output device"
     }
 
-    private func nextTarget() -> (uid: String, slot: OutputSlot)? {
+    private func nextTargetUID() -> String? {
         guard store.isConfigured,
               let primaryUID = store.primaryUID,
               let secondaryUID = store.secondaryUID else {
@@ -67,9 +63,9 @@ final class OutputToggleController: ObservableObject {
         }
 
         if audioService.defaultOutputUID == primaryUID {
-            return (secondaryUID, .secondary)
+            return secondaryUID
         }
 
-        return (primaryUID, .primary)
+        return primaryUID
     }
 }

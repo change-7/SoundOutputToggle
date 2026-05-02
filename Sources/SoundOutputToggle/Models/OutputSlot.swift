@@ -1,9 +1,7 @@
-import Foundation
-
-enum OutputSlot: String {
-    case primary = "A"
-    case secondary = "B"
-    case unknown = "?"
+enum OutputSlot {
+    case primary
+    case secondary
+    case unknown
 
     var displayName: String {
         switch self {
