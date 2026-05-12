@@ -30,7 +30,9 @@ final class AppServices {
             let isError = toggleController.lastError != nil
             hudService.show(
                 title: isError ? "Switch Failed" : deviceName,
-                subtitle: isError ? (toggleController.lastError ?? "Could not switch output") : "Sound Output",
+                subtitle: isError
+                    ? (toggleController.lastError ?? "Could not switch output")
+                    : (toggleController.lastWarning ?? "Sound Output"),
                 isError: isError,
                 duration: isError ? 1.35 : 0.95
             ) {

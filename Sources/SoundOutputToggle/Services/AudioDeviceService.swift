@@ -5,8 +5,9 @@ import Foundation
 final class AudioDeviceService: ObservableObject {
     @Published private(set) var outputDevices: [AudioOutputDevice] = []
     @Published private(set) var defaultOutputUID: String?
+    @Published private(set) var listenerError: String?
 
-    private var listenerInstalled = false
+    private var installedListenerSelectors = Set<AudioObjectPropertySelector>()
 
     init() {
         refresh()
@@ -31,7 +32,7 @@ final class AudioDeviceService: ObservableObject {
         return outputDevices.first(where: { $0.uid == uid })
     }
 
-    func setDefaultOutputDevice(uid: String, includeSystemSounds: Bool) throws {
+    func setDefaultOutputDevice(uid: String, includeSystemSounds: Bool) throws -> AudioSwitchWarning? {
         guard let target = device(uid: uid) else {
             throw AudioDeviceError.deviceUnavailable
         }
@@ -40,34 +41,57 @@ final class AudioDeviceService: ObservableObject {
             throw AudioDeviceError.deviceCannotBeDefault(target.name)
         }
 
+        defer {
+            refresh()
+        }
+
         try setDevice(target.audioDeviceID, selector: kAudioHardwarePropertyDefaultOutputDevice)
 
         if includeSystemSounds {
-            try setDevice(target.audioDeviceID, selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
+            do {
+                try setDevice(target.audioDeviceID, selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
+            } catch {
+                return .systemSoundsNotSwitched
+            }
         }
 
-        refresh()
+        return nil
     }
 
     func startListeningForChanges() {
-        guard !listenerInstalled else {
-            return
+        let selectors = [
+            kAudioHardwarePropertyDevices,
+            kAudioHardwarePropertyDefaultOutputDevice,
+            kAudioHardwarePropertyDefaultSystemOutputDevice
+        ]
+
+        let failedStatuses = selectors.compactMap { selector -> OSStatus? in
+            guard !installedListenerSelectors.contains(selector) else {
+                return nil
+            }
+
+            let status = addSystemListener(selector: selector)
+            if status == noErr {
+                installedListenerSelectors.insert(selector)
+                return nil
+            }
+
+            return status
         }
 
-        listenerInstalled = true
-        addSystemListener(selector: kAudioHardwarePropertyDevices)
-        addSystemListener(selector: kAudioHardwarePropertyDefaultOutputDevice)
-        addSystemListener(selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
+        listenerError = failedStatuses.isEmpty
+            ? nil
+            : "Could not watch audio device changes. Refresh manually if the list looks stale."
     }
 
-    private func addSystemListener(selector: AudioObjectPropertySelector) {
+    private func addSystemListener(selector: AudioObjectPropertySelector) -> OSStatus {
         var address = AudioObjectPropertyAddress(
             mSelector: selector,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
 
-        AudioObjectAddPropertyListenerBlock(
+        return AudioObjectAddPropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
             &address,
             DispatchQueue.main
@@ -261,6 +285,17 @@ enum AudioDeviceError: LocalizedError {
             return "Choose two output devices in Settings first."
         case .missingStringProperty:
             return "Could not read the audio device name or UID."
+        }
+    }
+}
+
+enum AudioSwitchWarning {
+    case systemSoundsNotSwitched
+
+    var message: String {
+        switch self {
+        case .systemSoundsNotSwitched:
+            return "Output switched, but system alert sounds could not be switched."
         }
     }
 }

@@ -4,6 +4,7 @@ import Combine
 final class OutputToggleController: ObservableObject {
     @Published private(set) var lastMessage: String?
     @Published private(set) var lastError: String?
+    @Published private(set) var lastWarning: String?
 
     private let audioService: AudioDeviceService
     private let store: DeviceSelectionStore
@@ -16,20 +17,25 @@ final class OutputToggleController: ObservableObject {
     func toggle() {
         guard let targetUID = nextTargetUID() else {
             lastError = AudioDeviceError.devicesNotConfigured.localizedDescription
+            lastMessage = nil
+            lastWarning = nil
             NSSound.beep()
             return
         }
 
         do {
-            try audioService.setDefaultOutputDevice(
+            let warning = try audioService.setDefaultOutputDevice(
                 uid: targetUID,
                 includeSystemSounds: store.includeSystemSounds
             )
             let name = audioService.device(uid: targetUID)?.name ?? "selected device"
             lastError = nil
+            lastWarning = warning?.message
             lastMessage = "Switched to \(name)."
         } catch {
             lastError = error.localizedDescription
+            lastMessage = nil
+            lastWarning = nil
             NSSound.beep()
         }
     }

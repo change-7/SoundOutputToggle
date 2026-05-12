@@ -18,6 +18,10 @@ let package = Package(
                 .linkedFramework("CoreAudio"),
                 .linkedFramework("SwiftUI")
             ]
+        ),
+        .testTarget(
+            name: "SoundOutputToggleTests",
+            dependencies: ["SoundOutputToggle"]
         )
     ]
 )

@@ -19,8 +19,6 @@ DMG_PATH="$ROOT_DIR/SoundOutputToggle.dmg"
 
 cd "$ROOT_DIR"
 
-pkill -x "$APP_NAME" >/dev/null 2>&1 || true
-
 swift build
 BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
 
@@ -97,16 +95,23 @@ PLIST
 create_bundle "$TOGGLE_BUNDLE" "$APP_NAME" "$BUNDLE_ID" "SoundOutputToggle" "toggle" "true"
 create_bundle "$SETTINGS_BUNDLE" "$SETTINGS_APP_NAME" "$SETTINGS_BUNDLE_ID" "SoundOutputToggleSettings" "settings" "false"
 
+stop_running_app() {
+  pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+}
+
 open_toggle() {
+  stop_running_app
   /usr/bin/open -n "$TOGGLE_BUNDLE"
 }
 
 open_settings() {
+  stop_running_app
   /usr/bin/open -n "$SETTINGS_BUNDLE"
 }
 
 install_user() {
   local install_dir="$HOME/Applications"
+  stop_running_app
   mkdir -p "$install_dir"
   rm -rf "$install_dir/$APP_NAME.app" "$install_dir/$SETTINGS_APP_NAME.app"
   cp -R "$TOGGLE_BUNDLE" "$install_dir/"
@@ -117,6 +122,7 @@ install_user() {
 
 install_system() {
   local install_dir="/Applications"
+  stop_running_app
   rm -rf "$install_dir/$APP_NAME.app" "$install_dir/$SETTINGS_APP_NAME.app"
   /usr/bin/ditto "$TOGGLE_BUNDLE" "$install_dir/$APP_NAME.app"
   /usr/bin/ditto "$SETTINGS_BUNDLE" "$install_dir/$SETTINGS_APP_NAME.app"
@@ -160,6 +166,7 @@ case "$MODE" in
     create_dmg
     ;;
   --debug|debug)
+    stop_running_app
     lldb -- "$TOGGLE_BUNDLE/Contents/MacOS/$APP_NAME"
     ;;
   --logs|logs)

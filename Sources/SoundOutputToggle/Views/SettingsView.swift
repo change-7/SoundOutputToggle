@@ -44,12 +44,18 @@ struct SettingsView: View {
                     ForEach(audioService.outputDevices) { device in
                         Text(device.name).tag(device.uid)
                     }
+                    if let missingUID = missingDeviceUID(selectionStore.primaryUID) {
+                        Text("Unavailable saved device").tag(missingUID)
+                    }
                 }
 
                 Picker("Output B", selection: binding(for: \.secondaryUID)) {
                     Text("Choose a device").tag("")
                     ForEach(audioService.outputDevices) { device in
                         Text(device.name).tag(device.uid)
+                    }
+                    if let missingUID = missingDeviceUID(selectionStore.secondaryUID) {
+                        Text("Unavailable saved device").tag(missingUID)
                     }
                 }
 
@@ -76,19 +82,33 @@ struct SettingsView: View {
                         let isError = toggleController.lastError != nil
                         hudService.show(
                             title: isError ? "Switch Failed" : deviceName,
-                            subtitle: isError ? (toggleController.lastError ?? "Could not switch output") : "Sound Output",
+                            subtitle: isError
+                                ? (toggleController.lastError ?? "Could not switch output")
+                                : (toggleController.lastWarning ?? "Sound Output"),
                             isError: isError
                         ) {}
                     }
                 }
                 .keyboardShortcut("t", modifiers: [.command])
-                .disabled(!selectionStore.isConfigured)
+                .disabled(!canToggleNow)
             }
 
             if let error = toggleController.lastError {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
+            } else if let warning = toggleController.lastWarning {
+                Text(warning)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            } else if let missingDeviceMessage {
+                Text(missingDeviceMessage)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            } else if let listenerError = audioService.listenerError {
+                Text(listenerError)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
             } else if let message = toggleController.lastMessage {
                 Text(message)
                     .font(.caption)
@@ -111,6 +131,34 @@ struct SettingsView: View {
         }
 
         return Text("Choose two different output devices before toggling.")
+    }
+
+    private var canToggleNow: Bool {
+        selectionStore.isConfigured && missingDeviceMessage == nil
+    }
+
+    private var missingDeviceMessage: String? {
+        let primaryMissing = missingDeviceUID(selectionStore.primaryUID) != nil
+        let secondaryMissing = missingDeviceUID(selectionStore.secondaryUID) != nil
+
+        switch (primaryMissing, secondaryMissing) {
+        case (true, true):
+            return "Output A and Output B are not currently connected."
+        case (true, false):
+            return "Output A is not currently connected."
+        case (false, true):
+            return "Output B is not currently connected."
+        case (false, false):
+            return nil
+        }
+    }
+
+    private func missingDeviceUID(_ uid: String?) -> String? {
+        guard let uid, !uid.isEmpty else {
+            return nil
+        }
+
+        return audioService.outputDevices.contains { $0.uid == uid } ? nil : uid
     }
 
     private func binding(for keyPath: ReferenceWritableKeyPath<DeviceSelectionStore, String?>) -> Binding<String> {
